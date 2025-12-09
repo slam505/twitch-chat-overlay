@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Twitch Chat Highlighter for OBS",
+  "name": "Chat Highlight",
   "version": "1.0.0",
-  "description": "Highlight Twitch chat messages and display them on your OBS stream via WebSocket. Solo developed by @slam505",
+  "description": "Highlight Twitch chat messages and display them on your stream as a Broswer Source.",
   "author": "slam505",
   "homepage_url": "https://github.com/slam505/twitch-chat-overlay",
   "permissions": [
