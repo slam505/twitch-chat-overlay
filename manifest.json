@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Twitch Chat Highlighter for OBS",
+  "version": "1.0.0",
+  "description": "Highlight Twitch chat messages and display them on your OBS stream via WebSocket",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://www.twitch.tv/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.twitch.tv/*"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "icons/icon.svg"
+  },
+  "icons": {
+    "16": "icons/icon.svg",
+    "48": "icons/icon.svg",
+    "128": "icons/icon.svg"
+  }
+}
+

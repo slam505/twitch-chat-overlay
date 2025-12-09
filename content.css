@@ -1,0 +1,43 @@
+/**
+ * Twitch Chat Highlighter - Content Script Styles
+ */
+
+.twitch-obs-highlight-btn {
+  background: linear-gradient(135deg, #9147ff 0%, #772ce8 100%);
+  border: none;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 6px;
+  margin-right: 6px;
+  opacity: 0.7;
+  transition: all 0.2s ease;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+.twitch-obs-highlight-btn:hover {
+  opacity: 1;
+  transform: scale(1.1);
+  box-shadow: 0 0 8px rgba(145, 71, 255, 0.6);
+}
+
+.twitch-obs-highlight-btn:active {
+  transform: scale(0.95);
+}
+
+.twitch-obs-highlight-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Animation for success/error states */
+.twitch-obs-highlight-btn[data-state="success"] {
+  background: linear-gradient(135deg, #00c853 0%, #009624 100%);
+}
+
+.twitch-obs-highlight-btn[data-state="error"] {
+  background: linear-gradient(135deg, #ff5252 0%, #d50000 100%);
+}
+

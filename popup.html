@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Twitch OBS Highlighter</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(145deg, #0e0e10 0%, #18181b 100%);
+      color: #efeff1;
+      min-width: 320px;
+      padding: 16px;
+    }
+    
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #3d3d40;
+    }
+    
+    .header h1 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #bf94ff;
+    }
+    
+    .logo {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, #9147ff 0%, #772ce8 100%);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+    
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background: #1f1f23;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ff4444;
+      transition: background 0.3s ease;
+    }
+    
+    .status-dot.connected {
+      background: #00c853;
+      box-shadow: 0 0 8px rgba(0, 200, 83, 0.5);
+    }
+    
+    .status-dot.connecting {
+      background: #ffab00;
+      animation: pulse 1s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    .status-text {
+      font-size: 13px;
+      color: #adadb8;
+    }
+    
+    .form-group {
+      margin-bottom: 14px;
+    }
+    
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: #adadb8;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .form-group input {
+      width: 100%;
+      padding: 10px 12px;
+      background: #1f1f23;
+      border: 1px solid #3d3d40;
+      border-radius: 6px;
+      color: #efeff1;
+      font-size: 14px;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .form-group input:focus {
+      outline: none;
+      border-color: #9147ff;
+      box-shadow: 0 0 0 2px rgba(145, 71, 255, 0.2);
+    }
+    
+    .form-group input::placeholder {
+      color: #636369;
+    }
+    
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    
+    button {
+      flex: 1;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #9147ff 0%, #772ce8 100%);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(145, 71, 255, 0.4);
+    }
+    
+    .btn-secondary {
+      background: #3d3d40;
+      color: #efeff1;
+    }
+    
+    .btn-secondary:hover {
+      background: #4d4d51;
+    }
+
+    .help-text {
+      font-size: 11px;
+      color: #636369;
+      margin-top: 4px;
+    }
+    
+    /* Toggle switch styles */
+    .toggle-group {
+      margin-bottom: 14px;
+    }
+    
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+    
+    .toggle-label input {
+      display: none;
+    }
+    
+    .toggle-slider {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      background: #3d3d40;
+      border-radius: 12px;
+      transition: background 0.2s ease;
+    }
+    
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 18px;
+      height: 18px;
+      background: #efeff1;
+      border-radius: 50%;
+      transition: transform 0.2s ease;
+    }
+    
+    .toggle-label input:checked + .toggle-slider {
+      background: linear-gradient(135deg, #9147ff 0%, #772ce8 100%);
+    }
+    
+    .toggle-label input:checked + .toggle-slider::before {
+      transform: translateX(20px);
+    }
+    
+    .toggle-text {
+      font-size: 14px;
+      color: #efeff1;
+    }
+    
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #bf94ff;
+      margin: 16px 0 10px;
+      padding-top: 12px;
+      border-top: 1px solid #3d3d40;
+    }
+    
+    .info-box {
+      background: #1f1f23;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 12px;
+      color: #adadb8;
+      line-height: 1.6;
+    }
+    
+    .info-box code {
+      background: #0e0e10;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #bf94ff;
+      font-family: 'Consolas', monospace;
+      font-size: 11px;
+    }
+
+    .step {
+      margin-bottom: 8px;
+    }
+    
+    .step:last-child {
+      margin-bottom: 0;
+    }
+
+    .step b {
+      color: #9147ff;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">✨</div>
+    <h1>Twitch Chat Highlighter</h1>
+  </div>
+  
+  <div class="status-bar">
+    <div class="status-dot" id="statusDot"></div>
+    <span class="status-text" id="statusText">Checking connection...</span>
+  </div>
+  
+  <div class="form-group">
+    <label for="obsUrl">OBS WebSocket URL</label>
+    <input type="text" id="obsUrl" placeholder="ws://localhost:4455">
+    <p class="help-text">Default: ws://localhost:4455</p>
+  </div>
+  
+  <div class="form-group">
+    <label for="obsPassword">Password (if set)</label>
+    <input type="password" id="obsPassword" placeholder="Leave empty if no password">
+  </div>
+  
+  <div class="form-group">
+    <label for="browserSourceName">Browser Source Name in OBS</label>
+    <input type="text" id="browserSourceName" placeholder="TwitchHighlight">
+    <p class="help-text">Must match exactly the name in OBS</p>
+  </div>
+  
+  <div class="section-title">Display Settings</div>
+  
+  <div class="form-group">
+    <label for="displayDuration">Message Display Duration (seconds)</label>
+    <input type="number" id="displayDuration" min="1" max="60" placeholder="8">
+    <p class="help-text">How long the message stays on screen (1-60 seconds)</p>
+  </div>
+  
+  <div class="form-group toggle-group">
+    <label class="toggle-label">
+      <input type="checkbox" id="showAvatar" checked>
+      <span class="toggle-slider"></span>
+      <span class="toggle-text">Show Profile Picture</span>
+    </label>
+  </div>
+  
+  <div class="btn-row">
+    <button class="btn-primary" id="saveBtn">Save & Connect</button>
+    <button class="btn-secondary" id="disconnectBtn">Disconnect</button>
+  </div>
+  
+  <div class="section-title">Setup Instructions</div>
+  <div class="info-box">
+    <div class="step"><b>1.</b> Enable WebSocket in OBS: <code>Tools → WebSocket Server Settings</code></div>
+    <div class="step"><b>2.</b> Add URL: <code>https://slam505.github.io/twitch-chat-overlay/</code></div>
+    <div class="step"><b>3.</b> Add a Browser Source named <code>TwitchHighlight</code></div>
+    <div class="step"><b>4.</b> Set size to <code>700 × 200</code></div>
+    <div class="step"><b>5.</b> Click <b>Save & Connect</b> above</div>
+    <div class="step"><b>6.</b> Go to Twitch and click ✨ on any chat message!</div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

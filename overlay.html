@@ -99,6 +99,14 @@
       animation: avatarPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
     }
     
+    .avatar.hidden {
+      display: none;
+    }
+    
+    .header.no-avatar {
+      gap: 0;
+    }
+    
     @keyframes avatarPop {
       from {
         transform: scale(0) rotate(-180deg);
@@ -233,7 +241,8 @@
      */
     
     const messageCard = document.getElementById('messageCard');
-    const avatar = document.getElementById('avatar');
+    const avatarEl = document.getElementById('avatar');
+    const headerEl = document.querySelector('.header');
     const username = document.getElementById('username');
     const messageContent = document.getElementById('messageContent');
     
@@ -241,18 +250,34 @@
     let hideTimeout = null;
     
     /**
-     * Configuration
+     * Default Configuration
      */
     const CONFIG = {
-      displayDuration: 8000,  // How long to show message (ms)
+      displayDuration: 8000,  // How long to show message (ms) - can be overridden
       hideDelay: 500,         // Animation delay before removing
+      showAvatar: true,       // Show profile picture - can be overridden
     };
     
     /**
-     * Parse URL parameters to get message data
+     * Parse URL parameters to get message data and settings
      */
     function getMessageFromURL() {
       const params = new URLSearchParams(window.location.search);
+      
+      // Parse display duration (in seconds from URL, convert to ms)
+      const durationParam = params.get('duration');
+      if (durationParam) {
+        const seconds = parseInt(durationParam);
+        if (!isNaN(seconds) && seconds > 0) {
+          CONFIG.displayDuration = seconds * 1000;
+        }
+      }
+      
+      // Parse show avatar setting
+      const showAvatarParam = params.get('showAvatar');
+      if (showAvatarParam !== null) {
+        CONFIG.showAvatar = showAvatarParam === '1' || showAvatarParam === 'true';
+      }
       
       return {
         username: params.get('username'),
@@ -295,14 +320,23 @@
       username.textContent = data.username || 'Anonymous';
       messageContent.textContent = data.message || '';
       
-      // Set avatar
-      if (data.avatarUrl) {
-        avatar.src = data.avatarUrl;
-        avatar.onerror = () => {
-          avatar.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(data.username)}&backgroundColor=9147ff`;
-        };
+      // Handle avatar visibility
+      if (CONFIG.showAvatar) {
+        avatarEl.classList.remove('hidden');
+        headerEl.classList.remove('no-avatar');
+        
+        // Set avatar
+        if (data.avatarUrl) {
+          avatarEl.src = data.avatarUrl;
+          avatarEl.onerror = () => {
+            avatarEl.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(data.username)}&backgroundColor=9147ff`;
+          };
+        } else {
+          avatarEl.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(data.username)}&backgroundColor=9147ff`;
+        }
       } else {
-        avatar.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(data.username)}&backgroundColor=9147ff`;
+        avatarEl.classList.add('hidden');
+        headerEl.classList.add('no-avatar');
       }
       
       // Set user color
