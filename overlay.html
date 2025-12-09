@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Twitch Chat Highlight Overlay</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Rubik', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: transparent;
+      overflow: hidden;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .overlay-container {
+      position: relative;
+      width: 100%;
+      max-width: 600px;
+    }
+    
+    .message-card {
+      background: linear-gradient(145deg, 
+        rgba(24, 24, 27, 0.95) 0%, 
+        rgba(14, 14, 16, 0.98) 100%);
+      border-radius: 16px;
+      padding: 20px 24px;
+      box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(145, 71, 255, 0.3),
+        0 0 40px rgba(145, 71, 255, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      transform: translateY(120%);
+      opacity: 0;
+      transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .message-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, 
+        #9147ff 0%, 
+        #bf94ff 50%, 
+        #9147ff 100%);
+      background-size: 200% 100%;
+      animation: shimmer 2s ease infinite;
+    }
+    
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    
+    .message-card.visible {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    
+    .message-card.hiding {
+      transform: translateY(-30px);
+      opacity: 0;
+      transition: all 0.4s ease-in;
+    }
+    
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    
+    .avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #9147ff 0%, #772ce8 100%);
+      box-shadow: 
+        0 4px 12px rgba(145, 71, 255, 0.4),
+        0 0 0 2px rgba(145, 71, 255, 0.3);
+      object-fit: cover;
+      animation: avatarPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
+    }
+    
+    @keyframes avatarPop {
+      from {
+        transform: scale(0) rotate(-180deg);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+      }
+    }
+    
+    .user-info {
+      flex: 1;
+    }
+    
+    .username {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--user-color, #bf94ff);
+      text-shadow: 0 0 20px var(--user-color, rgba(191, 148, 255, 0.5));
+      animation: fadeSlideIn 0.4s ease 0.3s both;
+    }
+    
+    @keyframes fadeSlideIn {
+      from {
+        transform: translateX(-10px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    
+    .label {
+      font-size: 11px;
+      font-weight: 500;
+      color: #9147ff;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-top: 2px;
+      opacity: 0.8;
+    }
+    
+    .message-content {
+      font-size: 22px;
+      font-weight: 500;
+      color: #efeff1;
+      line-height: 1.5;
+      word-wrap: break-word;
+      animation: messageReveal 0.6s ease 0.4s both;
+      position: relative;
+    }
+    
+    @keyframes messageReveal {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+        filter: blur(4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+      }
+    }
+    
+    /* Decorative elements */
+    .sparkle {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: #bf94ff;
+      border-radius: 50%;
+      opacity: 0;
+      animation: sparkle 1.5s ease infinite;
+    }
+    
+    .sparkle:nth-child(1) { top: 10%; right: 15%; animation-delay: 0s; }
+    .sparkle:nth-child(2) { top: 30%; right: 8%; animation-delay: 0.3s; }
+    .sparkle:nth-child(3) { bottom: 20%; right: 12%; animation-delay: 0.6s; }
+    .sparkle:nth-child(4) { bottom: 10%; left: 10%; animation-delay: 0.9s; }
+    
+    @keyframes sparkle {
+      0%, 100% { 
+        transform: scale(0);
+        opacity: 0;
+      }
+      50% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+    
+    /* Twitch branding */
+    .twitch-badge {
+      position: absolute;
+      top: 16px;
+      right: 20px;
+      font-size: 20px;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay-container">
+    <div class="message-card" id="messageCard">
+      <span class="sparkle"></span>
+      <span class="sparkle"></span>
+      <span class="sparkle"></span>
+      <span class="sparkle"></span>
+      <div class="twitch-badge">💬</div>
+      
+      <div class="header">
+        <img class="avatar" id="avatar" src="" alt="Avatar">
+        <div class="user-info">
+          <div class="username" id="username">Username</div>
+          <div class="label">says</div>
+        </div>
+      </div>
+      
+      <div class="message-content" id="messageContent">
+        Message will appear here...
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    /**
+     * Twitch Chat Highlight Overlay
+     * Reads message data from URL parameters
+     */
+    
+    const messageCard = document.getElementById('messageCard');
+    const avatar = document.getElementById('avatar');
+    const username = document.getElementById('username');
+    const messageContent = document.getElementById('messageContent');
+    
+    let displayTimeout = null;
+    let hideTimeout = null;
+    
+    /**
+     * Configuration
+     */
+    const CONFIG = {
+      displayDuration: 8000,  // How long to show message (ms)
+      hideDelay: 500,         // Animation delay before removing
+    };
+    
+    /**
+     * Parse URL parameters to get message data
+     */
+    function getMessageFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      
+      return {
+        username: params.get('username'),
+        message: params.get('message'),
+        avatarUrl: params.get('avatar'),
+        userColor: params.get('color'),
+        timestamp: params.get('timestamp'),
+      };
+    }
+    
+    /**
+     * Display a message on the overlay
+     */
+    function displayMessage(data) {
+      console.log('[Overlay] Displaying message:', data);
+      
+      // Clear any existing timeouts
+      if (displayTimeout) clearTimeout(displayTimeout);
+      if (hideTimeout) clearTimeout(hideTimeout);
+      
+      // Hide first if already visible
+      if (messageCard.classList.contains('visible')) {
+        messageCard.classList.add('hiding');
+        messageCard.classList.remove('visible');
+        
+        setTimeout(() => {
+          messageCard.classList.remove('hiding');
+          showMessage(data);
+        }, 400);
+      } else {
+        showMessage(data);
+      }
+    }
+    
+    /**
+     * Actually show the message
+     */
+    function showMessage(data) {
+      // Set content
+      username.textContent = data.username || 'Anonymous';
+      messageContent.textContent = data.message || '';
+      
+      // Set avatar
+      if (data.avatarUrl) {
+        avatar.src = data.avatarUrl;
+        avatar.onerror = () => {
+          avatar.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(data.username)}&backgroundColor=9147ff`;
+        };
+      } else {
+        avatar.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(data.username)}&backgroundColor=9147ff`;
+      }
+      
+      // Set user color
+      if (data.userColor) {
+        username.style.setProperty('--user-color', data.userColor);
+        username.style.color = data.userColor;
+      } else {
+        username.style.color = '#bf94ff';
+      }
+      
+      // Show the card
+      requestAnimationFrame(() => {
+        messageCard.classList.add('visible');
+      });
+      
+      // Auto-hide after duration
+      displayTimeout = setTimeout(() => {
+        messageCard.classList.add('hiding');
+        messageCard.classList.remove('visible');
+        
+        hideTimeout = setTimeout(() => {
+          messageCard.classList.remove('hiding');
+        }, CONFIG.hideDelay);
+      }, CONFIG.displayDuration);
+    }
+    
+    /**
+     * Initialize overlay - check URL parameters
+     */
+    function init() {
+      const messageData = getMessageFromURL();
+      
+      // Only display if we have message data
+      if (messageData.username && messageData.message) {
+        // Small delay to ensure CSS is loaded
+        setTimeout(() => {
+          displayMessage(messageData);
+        }, 100);
+      }
+    }
+    
+    // Initialize on load
+    init();
+    
+    console.log('[Overlay] Twitch Chat Highlight Overlay loaded');
+  </script>
+</body>
+</html>
