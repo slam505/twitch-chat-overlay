@@ -8,7 +8,6 @@ const obsUrlInput = document.getElementById('obsUrl');
 const obsPasswordInput = document.getElementById('obsPassword');
 const browserSourceNameInput = document.getElementById('browserSourceName');
 const displayDurationInput = document.getElementById('displayDuration');
-const showAvatarCheckbox = document.getElementById('showAvatar');
 const saveBtn = document.getElementById('saveBtn');
 const disconnectBtn = document.getElementById('disconnectBtn');
 
@@ -42,7 +41,6 @@ async function loadSettings() {
   obsPasswordInput.value = response.obsPassword || '';
   browserSourceNameInput.value = response.browserSourceName || 'TwitchHighlight';
   displayDurationInput.value = response.displayDuration || 8;
-  showAvatarCheckbox.checked = response.showAvatar !== false; // Default to true
 }
 
 /**
@@ -65,7 +63,6 @@ async function saveSettings() {
         obsPassword: obsPasswordInput.value,
         browserSourceName: browserSourceNameInput.value.trim() || 'TwitchHighlight',
         displayDuration: duration,
-        showAvatar: showAvatarCheckbox.checked,
       },
     });
     

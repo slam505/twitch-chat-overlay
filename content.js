@@ -174,18 +174,6 @@ function extractMessageData(chatLine) {
     .replace(/\s+/g, ' ')    // Normalize whitespace
     .trim();
   
-  // Get avatar URL
-  let avatarUrl = '';
-  const imgEl = chatLine.querySelector('img[alt]:not([class*="emote"]):not([class*="emoji"])');
-  if (imgEl && imgEl.src && !imgEl.src.includes('emoticon') && !imgEl.src.includes('emote')) {
-    avatarUrl = imgEl.src;
-  }
-  
-  // Fallback avatar
-  if (!avatarUrl) {
-    avatarUrl = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(username)}&backgroundColor=9147ff`;
-  }
-  
   // Get user color - 7TV puts it on .seventv-chat-user as inline style
   let userColor = '#9147ff';
   const colorEl = chatLine.querySelector('.seventv-chat-user[style*="color"]') || usernameEl;
@@ -208,7 +196,6 @@ function extractMessageData(chatLine) {
   return {
     username,
     message: messageText,
-    avatarUrl,
     userColor,
     timestamp,
     extractedAt: Date.now(),

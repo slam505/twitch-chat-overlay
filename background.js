@@ -331,20 +331,17 @@ async function sendHighlightToOBS(messageData) {
     throw new Error('Not connected to OBS');
   }
   
-  const stored = await chrome.storage.local.get(['browserSourceName', 'displayDuration', 'showAvatar']);
+  const stored = await chrome.storage.local.get(['browserSourceName', 'displayDuration']);
   const sourceName = stored.browserSourceName || OBS_CONFIG.browserSourceName;
   const displayDuration = stored.displayDuration || 8;
-  const showAvatar = stored.showAvatar !== false;
   
   // Encode message data as URL parameters
   const params = new URLSearchParams({
     username: messageData.username,
     message: messageData.message,
-    avatar: messageData.avatarUrl,
     color: messageData.userColor,
     timestamp: Date.now().toString(),
     duration: displayDuration.toString(),
-    showAvatar: showAvatar ? '1' : '0',
   });
   
   try {
@@ -425,13 +422,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return true;
       
     case 'GET_SETTINGS':
-      chrome.storage.local.get(['obsUrl', 'obsPassword', 'browserSourceName', 'displayDuration', 'showAvatar']).then((data) => {
+      chrome.storage.local.get(['obsUrl', 'obsPassword', 'browserSourceName', 'displayDuration']).then((data) => {
         sendResponse({
           obsUrl: data.obsUrl || OBS_CONFIG.url,
           obsPassword: data.obsPassword || '',
           browserSourceName: data.browserSourceName || OBS_CONFIG.browserSourceName,
           displayDuration: data.displayDuration || 8,
-          showAvatar: data.showAvatar !== false, // Default true
         });
       });
       return true;

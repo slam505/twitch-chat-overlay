@@ -87,37 +87,6 @@
       margin-bottom: 14px;
     }
     
-    .avatar {
-      width: 52px;
-      height: 52px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #9147ff 0%, #772ce8 100%);
-      box-shadow: 
-        0 4px 12px rgba(145, 71, 255, 0.4),
-        0 0 0 2px rgba(145, 71, 255, 0.3);
-      object-fit: cover;
-      animation: avatarPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
-    }
-    
-    .avatar.hidden {
-      display: none;
-    }
-    
-    .header.no-avatar {
-      gap: 0;
-    }
-    
-    @keyframes avatarPop {
-      from {
-        transform: scale(0) rotate(-180deg);
-        opacity: 0;
-      }
-      to {
-        transform: scale(1) rotate(0deg);
-        opacity: 1;
-      }
-    }
-    
     .user-info {
       flex: 1;
     }
@@ -221,7 +190,6 @@
       <div class="twitch-badge">💬</div>
       
       <div class="header">
-        <img class="avatar" id="avatar" src="" alt="Avatar">
         <div class="user-info">
           <div class="username" id="username">Username</div>
           <div class="label">says</div>
@@ -241,8 +209,6 @@
      */
     
     const messageCard = document.getElementById('messageCard');
-    const avatarEl = document.getElementById('avatar');
-    const headerEl = document.querySelector('.header');
     const username = document.getElementById('username');
     const messageContent = document.getElementById('messageContent');
     
@@ -255,7 +221,6 @@
     const CONFIG = {
       displayDuration: 8000,  // How long to show message (ms) - can be overridden
       hideDelay: 500,         // Animation delay before removing
-      showAvatar: true,       // Show profile picture - can be overridden
     };
     
     /**
@@ -273,16 +238,9 @@
         }
       }
       
-      // Parse show avatar setting
-      const showAvatarParam = params.get('showAvatar');
-      if (showAvatarParam !== null) {
-        CONFIG.showAvatar = showAvatarParam === '1' || showAvatarParam === 'true';
-      }
-      
       return {
         username: params.get('username'),
         message: params.get('message'),
-        avatarUrl: params.get('avatar'),
         userColor: params.get('color'),
         timestamp: params.get('timestamp'),
       };
@@ -319,25 +277,6 @@
       // Set content
       username.textContent = data.username || 'Anonymous';
       messageContent.textContent = data.message || '';
-      
-      // Handle avatar visibility
-      if (CONFIG.showAvatar) {
-        avatarEl.classList.remove('hidden');
-        headerEl.classList.remove('no-avatar');
-        
-        // Set avatar
-        if (data.avatarUrl) {
-          avatarEl.src = data.avatarUrl;
-          avatarEl.onerror = () => {
-            avatarEl.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(data.username)}&backgroundColor=9147ff`;
-          };
-        } else {
-          avatarEl.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(data.username)}&backgroundColor=9147ff`;
-        }
-      } else {
-        avatarEl.classList.add('hidden');
-        headerEl.classList.add('no-avatar');
-      }
       
       // Set user color
       if (data.userColor) {
