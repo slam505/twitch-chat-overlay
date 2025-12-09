@@ -14,10 +14,22 @@
       padding: 0;
     }
     
+    html, body {
+      overflow: hidden !important;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+    
     body {
       font-family: 'Rubik', -apple-system, BlinkMacSystemFont, sans-serif;
       background: transparent;
-      overflow: visible;
       min-height: 100vh;
       display: flex;
       align-items: flex-end;
@@ -30,25 +42,28 @@
       width: 100%;
       max-width: 600px;
     }
-    
+
     .message-card {
-      background: linear-gradient(145deg, 
-        rgba(24, 24, 27, 0.95) 0%, 
+      background: linear-gradient(145deg,
+        rgba(24, 24, 27, 0.95) 0%,
         rgba(14, 14, 16, 0.98) 100%);
       border-radius: 16px;
       padding: 20px 24px;
-      box-shadow: 
+      box-shadow:
         0 20px 60px rgba(0, 0, 0, 0.5),
         0 0 0 1px rgba(145, 71, 255, 0.3),
         0 0 40px rgba(145, 71, 255, 0.15),
         inset 0 1px 0 rgba(255, 255, 255, 0.05);
       transform: translateY(120%);
       opacity: 0;
-      transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+      visibility: hidden;
+      transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  opacity 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  visibility 0s 0.5s;
       position: relative;
-      overflow: visible;
+      overflow: hidden;
     }
-    
+
     .message-card::before {
       content: '';
       position: absolute;
@@ -56,41 +71,53 @@
       left: 0;
       right: 0;
       height: 3px;
-      background: linear-gradient(90deg, 
-        #9147ff 0%, 
-        #bf94ff 50%, 
+      background: linear-gradient(90deg,
+        #9147ff 0%,
+        #bf94ff 50%,
         #9147ff 100%);
       background-size: 200% 100%;
-      animation: shimmer 2s ease infinite;
+      animation: none;
+      border-radius: 16px 16px 0 0;
     }
-    
+
     @keyframes shimmer {
       0% { background-position: 200% 0; }
       100% { background-position: -200% 0; }
     }
-    
+
     .message-card.visible {
       transform: translateY(0);
       opacity: 1;
+      visibility: visible;
+      transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  opacity 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  visibility 0s 0s;
     }
-    
+
+    .message-card.visible::before {
+      animation: shimmer 2s ease infinite;
+    }
+
     .message-card.hiding {
       transform: translateY(-30px);
       opacity: 0;
-      transition: all 0.4s ease-in;
+      visibility: hidden;
+      transition: transform 0.4s ease-in,
+                  opacity 0.4s ease-in,
+                  visibility 0s 0.4s;
     }
-    
+
     .header {
       display: flex;
       align-items: center;
       gap: 14px;
       margin-bottom: 14px;
     }
-    
+
     .user-info {
       flex: 1;
     }
-    
+
     .username {
       font-size: 18px;
       font-weight: 700;
@@ -98,7 +125,7 @@
       text-shadow: 0 0 20px var(--user-color, rgba(191, 148, 255, 0.5));
       animation: fadeSlideIn 0.4s ease 0.3s both;
     }
-    
+
     @keyframes fadeSlideIn {
       from {
         transform: translateX(-10px);
@@ -109,7 +136,7 @@
         opacity: 1;
       }
     }
-    
+
     .label {
       font-size: 11px;
       font-weight: 500;
@@ -119,7 +146,7 @@
       margin-top: 2px;
       opacity: 0.8;
     }
-    
+
     .message-content {
       font-size: 22px;
       font-weight: 500;
@@ -132,7 +159,7 @@
       animation: messageReveal 0.6s ease 0.4s both;
       position: relative;
     }
-    
+
     /* Emote styles */
     .message-content img.overlay-emote {
       display: inline-block;
@@ -143,12 +170,12 @@
       margin: 0 2px;
       object-fit: contain;
     }
-    
+
     .message-content .emote-wrapper {
       display: inline-block;
       vertical-align: middle;
     }
-    
+
     @keyframes messageReveal {
       from {
         opacity: 0;
@@ -161,8 +188,8 @@
         filter: blur(0);
       }
     }
-    
-    /* Decorative elements */
+
+    /* Decorative elements - only animate when card is visible */
     .sparkle {
       position: absolute;
       width: 6px;
@@ -170,16 +197,26 @@
       background: #bf94ff;
       border-radius: 50%;
       opacity: 0;
+      visibility: hidden;
+    }
+    
+    .sparkle:nth-child(1) { top: 10%; right: 15%; }
+    .sparkle:nth-child(2) { top: 30%; right: 8%; }
+    .sparkle:nth-child(3) { bottom: 20%; right: 12%; }
+    .sparkle:nth-child(4) { bottom: 10%; left: 10%; }
+
+    .message-card.visible .sparkle {
+      visibility: visible;
       animation: sparkle 1.5s ease infinite;
     }
     
-    .sparkle:nth-child(1) { top: 10%; right: 15%; animation-delay: 0s; }
-    .sparkle:nth-child(2) { top: 30%; right: 8%; animation-delay: 0.3s; }
-    .sparkle:nth-child(3) { bottom: 20%; right: 12%; animation-delay: 0.6s; }
-    .sparkle:nth-child(4) { bottom: 10%; left: 10%; animation-delay: 0.9s; }
-    
+    .message-card.visible .sparkle:nth-child(1) { animation-delay: 0s; }
+    .message-card.visible .sparkle:nth-child(2) { animation-delay: 0.3s; }
+    .message-card.visible .sparkle:nth-child(3) { animation-delay: 0.6s; }
+    .message-card.visible .sparkle:nth-child(4) { animation-delay: 0.9s; }
+
     @keyframes sparkle {
-      0%, 100% { 
+      0%, 100% {
         transform: scale(0);
         opacity: 0;
       }
@@ -188,7 +225,7 @@
         opacity: 1;
       }
     }
-    
+
     /* Twitch branding */
     .twitch-badge {
       position: absolute;
@@ -207,33 +244,33 @@
       <span class="sparkle"></span>
       <span class="sparkle"></span>
       <div class="twitch-badge">💬</div>
-      
+
       <div class="header">
         <div class="user-info">
           <div class="username" id="username">Username</div>
           <div class="label">says</div>
         </div>
       </div>
-      
+
       <div class="message-content" id="messageContent">
         Message will appear here...
       </div>
     </div>
   </div>
-  
+
   <script>
     /**
      * Twitch Chat Highlight Overlay
      * Reads message data from URL parameters
      */
-    
+
     const messageCard = document.getElementById('messageCard');
     const username = document.getElementById('username');
     const messageContent = document.getElementById('messageContent');
-    
+
     let displayTimeout = null;
     let hideTimeout = null;
-    
+
     /**
      * Default Configuration
      */
@@ -241,13 +278,13 @@
       displayDuration: 8000,  // How long to show message (ms) - can be overridden
       hideDelay: 500,         // Animation delay before removing
     };
-    
+
     /**
      * Parse URL parameters to get message data and settings
      */
     function getMessageFromURL() {
       const params = new URLSearchParams(window.location.search);
-      
+
       // Parse display duration (in seconds from URL, convert to ms)
       const durationParam = params.get('duration');
       if (durationParam) {
@@ -256,7 +293,7 @@
           CONFIG.displayDuration = seconds * 1000;
         }
       }
-      
+
       return {
         username: params.get('username'),
         message: params.get('message'),
@@ -265,22 +302,22 @@
         timestamp: params.get('timestamp'),
       };
     }
-    
+
     /**
      * Display a message on the overlay
      */
     function displayMessage(data) {
       console.log('[Overlay] Displaying message:', data);
-      
+
       // Clear any existing timeouts
       if (displayTimeout) clearTimeout(displayTimeout);
       if (hideTimeout) clearTimeout(hideTimeout);
-      
+
       // Hide first if already visible
       if (messageCard.classList.contains('visible')) {
         messageCard.classList.add('hiding');
         messageCard.classList.remove('visible');
-        
+
         setTimeout(() => {
           messageCard.classList.remove('hiding');
           showMessage(data);
@@ -289,7 +326,7 @@
         showMessage(data);
       }
     }
-    
+
     /**
      * Sanitize HTML to only allow safe elements
      */
@@ -297,10 +334,10 @@
       // Create a temporary element
       const temp = document.createElement('div');
       temp.innerHTML = html;
-      
+
       // Only allow these elements
       const allowedTags = ['IMG', 'SPAN', 'BR'];
-      
+
       // Recursively clean nodes
       function cleanNode(node) {
         const children = Array.from(node.childNodes);
@@ -318,16 +355,16 @@
                 // Only keep src, alt, and class for images
                 const src = child.getAttribute('src') || '';
                 const alt = child.getAttribute('alt') || '';
-                
+
                 // Verify it's from a trusted emote CDN
                 const trustedDomains = [
                   '7tv.app',
-                  'cdn.betterttv.net', 
+                  'cdn.betterttv.net',
                   'cdn.frankerfacez.com',
                   'static-cdn.jtvnw.net'
                 ];
                 const isTrusted = trustedDomains.some(domain => src.includes(domain));
-                
+
                 if (isTrusted) {
                   // Remove all attributes except safe ones
                   Array.from(child.attributes).forEach(attr => {
@@ -352,25 +389,25 @@
           }
         }
       }
-      
+
       cleanNode(temp);
       return temp.innerHTML;
     }
-    
+
     /**
      * Actually show the message
      */
     function showMessage(data) {
       // Set content
       username.textContent = data.username || 'Anonymous';
-      
+
       // Use HTML if available (for emotes), otherwise plain text
       if (data.messageHTML && data.messageHTML.trim()) {
         messageContent.innerHTML = sanitizeHTML(data.messageHTML);
       } else {
         messageContent.textContent = data.message || '';
       }
-      
+
       // Set user color
       if (data.userColor) {
         username.style.setProperty('--user-color', data.userColor);
@@ -378,29 +415,29 @@
       } else {
         username.style.color = '#bf94ff';
       }
-      
+
       // Show the card
       requestAnimationFrame(() => {
         messageCard.classList.add('visible');
       });
-      
+
       // Auto-hide after duration
       displayTimeout = setTimeout(() => {
         messageCard.classList.add('hiding');
         messageCard.classList.remove('visible');
-        
+
         hideTimeout = setTimeout(() => {
           messageCard.classList.remove('hiding');
         }, CONFIG.hideDelay);
       }, CONFIG.displayDuration);
     }
-    
+
     /**
      * Initialize overlay - check URL parameters
      */
     function init() {
       const messageData = getMessageFromURL();
-      
+
       // Only display if we have message data (check both plain text and HTML for emote-only messages)
       const hasContent = messageData.message || messageData.messageHTML;
       if (messageData.username && hasContent) {
@@ -410,10 +447,10 @@
         }, 100);
       }
     }
-    
+
     // Initialize on load
     init();
-    
+
     console.log('[Overlay] Twitch Chat Highlight Overlay loaded');
   </script>
 </body>
