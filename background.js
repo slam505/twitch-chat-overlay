@@ -339,6 +339,7 @@ async function sendHighlightToOBS(messageData) {
   const params = new URLSearchParams({
     username: messageData.username,
     message: messageData.message,
+    messageHTML: messageData.messageHTML || '',
     color: messageData.userColor,
     timestamp: Date.now().toString(),
     duration: displayDuration.toString(),

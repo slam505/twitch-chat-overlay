@@ -126,6 +126,85 @@ function hasHighlightButton(element) {
 }
 
 /**
+ * Extract emotes from message body and convert to clean HTML
+ */
+function extractMessageHTML(messageEl) {
+  if (!messageEl) return { html: '', text: '' };
+  
+  // Clone to avoid modifying the original
+  const clone = messageEl.cloneNode(true);
+  
+  // Remove any buttons or non-content elements
+  clone.querySelectorAll('button, [class*="button"], svg').forEach(el => el.remove());
+  
+  // Process all emote images to ensure they have absolute URLs and proper classes
+  clone.querySelectorAll('img').forEach(img => {
+    // Get the best source URL
+    let src = img.src || '';
+    const srcset = img.getAttribute('srcset') || '';
+    
+    // Parse srcset to get a good URL (prefer 2x for quality)
+    if (srcset) {
+      const srcsetParts = srcset.split(',').map(s => s.trim());
+      for (const part of srcsetParts) {
+        const [url, descriptor] = part.split(/\s+/);
+        if (url) {
+          // Prefer 2x, fallback to any
+          if (descriptor === '2x' || !src) {
+            src = url;
+            if (descriptor === '2x') break;
+          }
+        }
+      }
+    }
+    
+    // Ensure absolute URL
+    if (src.startsWith('//')) {
+      src = 'https:' + src;
+    }
+    
+    // Only keep emote images (7TV, BTTV, FFZ, Twitch)
+    const isEmote = 
+      src.includes('7tv.app') || 
+      src.includes('cdn.betterttv.net') || 
+      src.includes('cdn.frankerfacez.com') ||
+      src.includes('static-cdn.jtvnw.net/emoticons') ||
+      img.classList.contains('seventv-chat-emote') ||
+      img.classList.contains('chat-image') ||
+      img.classList.contains('emote') ||
+      img.closest('.seventv-emote-box') ||
+      img.closest('.emote-token');
+    
+    if (isEmote && src) {
+      // Create a clean emote element
+      img.src = src;
+      img.removeAttribute('srcset');
+      img.className = 'overlay-emote';
+      img.removeAttribute('style');
+      // Keep alt for accessibility
+    } else {
+      // Remove non-emote images
+      img.remove();
+    }
+  });
+  
+  // Get the cleaned HTML
+  let html = clone.innerHTML || '';
+  
+  // Clean up excessive whitespace but preserve structure
+  html = html
+    .replace(/<!--.*?-->/g, '') // Remove comments
+    .replace(/<div[^>]*class="[^"]*emote-box[^"]*"[^>]*>/gi, '<span class="emote-wrapper">') // Convert emote divs to spans
+    .replace(/<\/div>/gi, '</span>')
+    .trim();
+  
+  // Get plain text version as fallback
+  const text = clone.textContent?.trim() || '';
+  
+  return { html, text };
+}
+
+/**
  * Extract message data from a chat line element
  */
 function extractMessageData(chatLine) {
@@ -149,26 +228,26 @@ function extractMessageData(chatLine) {
   // Clean username (remove any extra characters)
   username = username.replace(/^[@]/, '').trim();
   
-  // Get message text - try multiple approaches
+  // Get message content with emotes
+  const messageEl = queryWithFallbacks(chatLine, SELECTORS.messageTexts);
+  let messageHTML = '';
   let messageText = '';
   
-  // Try message body selectors
-  const messageEl = queryWithFallbacks(chatLine, SELECTORS.messageTexts);
   if (messageEl) {
-    // Get all text, including from nested elements
-    messageText = messageEl.textContent?.trim() || '';
+    const extracted = extractMessageHTML(messageEl);
+    messageHTML = extracted.html;
+    messageText = extracted.text;
   }
   
-  // If still no message, try getting text from the entire chat line
+  // Fallback: try getting text from the entire chat line
   if (!messageText) {
-    // Clone and remove username/badges to get just the message
     const clone = chatLine.cloneNode(true);
     const toRemove = clone.querySelectorAll('[class*="username"], [class*="badge"], [class*="timestamp"], [class*="button"], button, svg');
     toRemove.forEach(el => el.remove());
     messageText = clone.textContent?.trim() || '';
   }
   
-  // Clean up the message
+  // Clean up the text
   messageText = messageText
     .replace(/^\s*:\s*/, '') // Remove leading colon
     .replace(/\s+/g, ' ')    // Normalize whitespace
@@ -196,6 +275,7 @@ function extractMessageData(chatLine) {
   return {
     username,
     message: messageText,
+    messageHTML: messageHTML,
     userColor,
     timestamp,
     extractedAt: Date.now(),
