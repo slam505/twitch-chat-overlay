@@ -69,10 +69,68 @@ const BUTTON_CONFIG = {
   title: 'Highlight on Stream',
 };
 
-/**
- * Track processed messages by a unique identifier
- */
-const processedMessageIds = new Set();
+const CLOSE_BUTTON_CONFIG = {
+  className: 'twitch-obs-hide-btn',
+  text: '✕',
+  title: 'Hide current overlay',
+};
+
+const STYLE_ID = 'twitch-obs-highlight-styles';
+
+function injectStyles() {
+  if (document.getElementById(STYLE_ID)) return;
+
+  const style = document.createElement('style');
+  style.id = STYLE_ID;
+  style.textContent = `
+    .twitch-obs-highlight-btn,
+    .twitch-obs-hide-btn {
+      border: none;
+      border-radius: 6px;
+      padding: 2px 8px;
+      height: 24px;
+      min-width: 24px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(145, 71, 255, 0.35);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+      opacity: 0.7;
+    }
+
+    .twitch-obs-highlight-btn {
+      background: linear-gradient(135deg, #9147ff 0%, #772ce8 100%);
+      color: #ffffff;
+    }
+
+    .twitch-obs-hide-btn {
+      background: #c53030;
+      color: #ffffff;
+      margin-left: 6px;
+    }
+
+    .twitch-obs-highlight-btn:hover,
+    .twitch-obs-hide-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(145, 71, 255, 0.4);
+      opacity: 1;
+    }
+
+    .twitch-obs-highlight-btn:disabled,
+    .twitch-obs-hide-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+  `;
+
+  document.head.appendChild(style);
+}
 
 /**
  * Try multiple selectors and return the first match
@@ -103,19 +161,6 @@ function queryAllWithFallbacks(element, selectors) {
     }
   }
   return Array.from(results);
-}
-
-/**
- * Generate a unique ID for a chat message element
- */
-function getMessageId(chatLine) {
-  // Try various attributes that might be unique
-  return chatLine.getAttribute('data-a-id') ||
-         chatLine.getAttribute('data-message-id') ||
-         chatLine.getAttribute('data-seventv-message-id') ||
-         chatLine.getAttribute('id') ||
-         // Fallback: use position + content hash
-         `${chatLine.textContent?.slice(0, 50)}-${Date.now()}`;
 }
 
 /**
@@ -344,6 +389,54 @@ function createHighlightButton(chatLine) {
 }
 
 /**
+ * Create the close/hide overlay button element
+ */
+function createCloseButton() {
+  const button = document.createElement('button');
+  button.className = CLOSE_BUTTON_CONFIG.className;
+  button.textContent = CLOSE_BUTTON_CONFIG.text;
+  button.title = CLOSE_BUTTON_CONFIG.title;
+
+  button.addEventListener('click', async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const originalText = CLOSE_BUTTON_CONFIG.text;
+    button.textContent = '⏳';
+    button.disabled = true;
+
+    try {
+      if (!chrome.runtime?.id) {
+        throw new Error('Extension reloaded - please refresh the page');
+      }
+
+      const response = await chrome.runtime.sendMessage({ type: 'HIDE_OVERLAY' });
+
+      if (response?.success) {
+        button.textContent = '✅';
+        setTimeout(() => {
+          button.textContent = originalText;
+          button.disabled = false;
+        }, 1500);
+      } else {
+        throw new Error(response?.error || 'Unknown error');
+      }
+    } catch (error) {
+      console.error('[Twitch Highlighter] Hide overlay error:', error);
+      button.textContent = '❌';
+      button.title = error.message || 'Failed to hide overlay';
+      setTimeout(() => {
+        button.textContent = originalText;
+        button.title = CLOSE_BUTTON_CONFIG.title;
+        button.disabled = false;
+      }, 2000);
+    }
+  });
+
+  return button;
+}
+
+/**
  * Process a single chat line and add highlight button
  */
 function processChatLine(chatLine) {
@@ -352,13 +445,14 @@ function processChatLine(chatLine) {
     return;
   }
   
-  const button = createHighlightButton(chatLine);
+  const highlightButton = createHighlightButton(chatLine);
+  const closeButton = createCloseButton();
   
   // Try 7TV button container first (best integration)
   const sevenTVButtons = chatLine.querySelector(SELECTORS.sevenTVButtons);
   if (sevenTVButtons) {
-    // Insert at the beginning of 7TV's button row
-    sevenTVButtons.insertBefore(button, sevenTVButtons.firstChild);
+    sevenTVButtons.insertBefore(highlightButton, sevenTVButtons.firstChild);
+    sevenTVButtons.insertBefore(closeButton, highlightButton.nextSibling);
     console.log('[Twitch Highlighter] Added button to 7TV message');
     return;
   }
@@ -379,9 +473,11 @@ function processChatLine(chatLine) {
   
   // Insert button
   if (insertTarget === chatLine) {
-    chatLine.insertBefore(button, chatLine.firstChild);
+    chatLine.insertBefore(highlightButton, chatLine.firstChild);
+    chatLine.insertBefore(closeButton, highlightButton.nextSibling);
   } else {
-    insertTarget.insertBefore(button, insertTarget.firstChild);
+    insertTarget.insertBefore(highlightButton, insertTarget.firstChild);
+    insertTarget.insertBefore(closeButton, highlightButton.nextSibling);
   }
   
   console.log('[Twitch Highlighter] Added button to message');
@@ -503,6 +599,7 @@ function observeChat() {
  */
 function init() {
   console.log('[Twitch Highlighter] Content script loaded (with 7TV/BTTV/FFZ support)');
+  injectStyles();
   
   // Wait for page to be ready
   if (document.readyState === 'loading') {

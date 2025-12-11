@@ -226,14 +226,6 @@
       }
     }
 
-    /* Twitch branding */
-    .twitch-badge {
-      position: absolute;
-      top: 16px;
-      right: 20px;
-      font-size: 20px;
-      opacity: 0.6;
-    }
   </style>
 </head>
 <body>
@@ -243,7 +235,6 @@
       <span class="sparkle"></span>
       <span class="sparkle"></span>
       <span class="sparkle"></span>
-      <div class="twitch-badge">💬</div>
 
       <div class="header">
         <div class="user-info">
@@ -257,6 +248,7 @@
       </div>
     </div>
   </div>
+  <audio id="whooshAudio" src="https://slam505.github.io/twitch-chat-overlay/whoosh.mp3" preload="auto"></audio>
 
   <script>
     /**
@@ -267,9 +259,11 @@
     const messageCard = document.getElementById('messageCard');
     const username = document.getElementById('username');
     const messageContent = document.getElementById('messageContent');
+    const whooshAudio = document.getElementById('whooshAudio');
 
     let displayTimeout = null;
     let hideTimeout = null;
+    let audioVolume = 0.5;
 
     /**
      * Default Configuration
@@ -277,7 +271,24 @@
     const CONFIG = {
       displayDuration: 8000,  // How long to show message (ms) - can be overridden
       hideDelay: 500,         // Animation delay before removing
+      autoTimeoutEnabled: true, // Whether to auto-hide
     };
+
+    function playWhoosh() {
+      if (!whooshAudio) {
+        console.warn('[Overlay] Whoosh audio element not found');
+        return;
+      }
+      try {
+        whooshAudio.volume = audioVolume;
+        whooshAudio.currentTime = 0;
+        whooshAudio.play().catch((e) => {
+          console.warn('[Overlay] Whoosh play() rejected:', e.message);
+        });
+      } catch (e) {
+        console.warn('[Overlay] Whoosh playback failed', e);
+      }
+    }
 
     /**
      * Parse URL parameters to get message data and settings
@@ -294,6 +305,20 @@
         }
       }
 
+      const autoTimeoutParam = params.get('autoTimeoutEnabled');
+      if (autoTimeoutParam !== null) {
+        const normalized = autoTimeoutParam.toLowerCase();
+        CONFIG.autoTimeoutEnabled = normalized === '1' || normalized === 'true';
+      }
+
+      const volumeParam = params.get('volume');
+      if (volumeParam !== null) {
+        const parsedVolume = parseFloat(volumeParam);
+        if (!isNaN(parsedVolume) && parsedVolume >= 0 && parsedVolume <= 1) {
+          audioVolume = parsedVolume;
+        }
+      }
+
       return {
         username: params.get('username'),
         message: params.get('message'),
@@ -301,6 +326,43 @@
         userColor: params.get('color'),
         timestamp: params.get('timestamp'),
       };
+    }
+
+    /**
+     * Hide the overlay with the fade-up animation
+     */
+    function hideOverlay() {
+      // Clear any pending timeouts
+      if (displayTimeout) clearTimeout(displayTimeout);
+      if (hideTimeout) clearTimeout(hideTimeout);
+
+      // Trigger the fade-up hide animation
+      messageCard.classList.add('hiding');
+      messageCard.classList.remove('visible');
+
+      hideTimeout = setTimeout(() => {
+        messageCard.classList.remove('hiding');
+      }, CONFIG.hideDelay);
+    }
+
+    /**
+     * Populate the card content without showing it
+     */
+    function populateCard(data) {
+      username.textContent = data.username || 'Anonymous';
+
+      if (data.messageHTML && data.messageHTML.trim()) {
+        messageContent.innerHTML = sanitizeHTML(data.messageHTML);
+      } else {
+        messageContent.textContent = data.message || '';
+      }
+
+      if (data.userColor) {
+        username.style.setProperty('--user-color', data.userColor);
+        username.style.color = data.userColor;
+      } else {
+        username.style.color = '#bf94ff';
+      }
     }
 
     /**
@@ -398,38 +460,21 @@
      * Actually show the message
      */
     function showMessage(data) {
-      // Set content
-      username.textContent = data.username || 'Anonymous';
+      // Populate card content
+      populateCard(data);
 
-      // Use HTML if available (for emotes), otherwise plain text
-      if (data.messageHTML && data.messageHTML.trim()) {
-        messageContent.innerHTML = sanitizeHTML(data.messageHTML);
-      } else {
-        messageContent.textContent = data.message || '';
-      }
-
-      // Set user color
-      if (data.userColor) {
-        username.style.setProperty('--user-color', data.userColor);
-        username.style.color = data.userColor;
-      } else {
-        username.style.color = '#bf94ff';
-      }
-
-      // Show the card
+      // Show the card with animation
       requestAnimationFrame(() => {
         messageCard.classList.add('visible');
       });
+      playWhoosh();
 
-      // Auto-hide after duration
-      displayTimeout = setTimeout(() => {
-        messageCard.classList.add('hiding');
-        messageCard.classList.remove('visible');
-
-        hideTimeout = setTimeout(() => {
-          messageCard.classList.remove('hiding');
-        }, CONFIG.hideDelay);
-      }, CONFIG.displayDuration);
+      // Schedule auto-hide if enabled
+      if (CONFIG.autoTimeoutEnabled) {
+        displayTimeout = setTimeout(() => {
+          hideOverlay();
+        }, CONFIG.displayDuration);
+      }
     }
 
     /**

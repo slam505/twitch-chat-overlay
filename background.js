@@ -25,17 +25,7 @@ let pendingRequests = new Map();
 let reconnectAttempts = 0;
 let autoReconnect = false;
 let keepAliveInterval = null;
-
-/**
- * Generate SHA256 hash using Web Crypto API
- */
-async function sha256(message) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(message);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
+let lastOverlayPayload = null;
 
 /**
  * Generate Base64 encoded SHA256 hash
@@ -331,9 +321,11 @@ async function sendHighlightToOBS(messageData) {
     throw new Error('Not connected to OBS');
   }
   
-  const stored = await chrome.storage.local.get(['browserSourceName', 'displayDuration']);
-  const sourceName = stored.browserSourceName || OBS_CONFIG.browserSourceName;
+  const stored = await chrome.storage.local.get(['displayDuration', 'autoTimeoutEnabled', 'whooshVolume']);
+  const sourceName = OBS_CONFIG.browserSourceName;
   const displayDuration = stored.displayDuration || 8;
+  const autoTimeoutEnabled = stored.autoTimeoutEnabled !== false;
+  const whooshVolume = typeof stored.whooshVolume === 'number' ? stored.whooshVolume : 0.5;
   
   // Encode message data as URL parameters
   const params = new URLSearchParams({
@@ -343,6 +335,8 @@ async function sendHighlightToOBS(messageData) {
     color: messageData.userColor,
     timestamp: Date.now().toString(),
     duration: displayDuration.toString(),
+    autoTimeoutEnabled: autoTimeoutEnabled ? '1' : '0',
+    volume: whooshVolume.toString(),
   });
   
   try {
@@ -360,6 +354,12 @@ async function sendHighlightToOBS(messageData) {
     // Remove existing query params and add new ones
     const urlBase = baseUrl.split('?')[0];
     const newUrl = urlBase + '?' + params.toString();
+
+    lastOverlayPayload = {
+      baseUrl: urlBase,
+      sourceName,
+      params: Object.fromEntries(params.entries()),
+    };
     
     // Update browser source URL with message data
     await sendRequest('SetInputSettings', {
@@ -384,6 +384,56 @@ async function sendHighlightToOBS(messageData) {
 }
 
 /**
+ * Clear current overlay content by resetting the browser source URL to its base (instant hide)
+ */
+async function hideOverlay() {
+  if (!isAuthenticated) {
+    throw new Error('Not connected to OBS');
+  }
+
+  const sourceName = OBS_CONFIG.browserSourceName;
+
+  try {
+    // Get the base URL (either from cache or by fetching current settings)
+    let baseUrl = lastOverlayPayload?.baseUrl;
+    const targetSource = lastOverlayPayload?.sourceName || sourceName;
+
+    if (!baseUrl) {
+      const currentSettings = await sendRequest('GetInputSettings', {
+        inputName: sourceName,
+      });
+      baseUrl = currentSettings?.inputSettings?.url || '';
+      if (!baseUrl) {
+        throw new Error(`Browser source "${sourceName}" not found or has no URL. Please create a browser source named "${sourceName}" in OBS.`);
+      }
+      baseUrl = baseUrl.split('?')[0];
+    }
+
+    // Set URL to base only (no params = nothing to display)
+    await sendRequest('SetInputSettings', {
+      inputName: targetSource,
+      inputSettings: {
+        url: baseUrl,
+      },
+    });
+
+    await sendRequest('PressInputPropertiesButton', {
+      inputName: targetSource,
+      propertyName: 'refreshnocache',
+    });
+
+    // Clear the cached payload
+    lastOverlayPayload = null;
+
+    console.log('[OBS WS] Overlay cleared');
+    return true;
+  } catch (error) {
+    console.error('[OBS WS] Failed to clear overlay:', error);
+    throw error;
+  }
+}
+
+/**
  * Handle messages from content script and popup
  */
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -392,6 +442,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   switch (message.type) {
     case 'HIGHLIGHT_MESSAGE':
       sendHighlightToOBS(message.data)
+        .then(() => sendResponse({ success: true }))
+        .catch((error) => sendResponse({ success: false, error: error.message }));
+      return true;
+    
+    case 'HIDE_OVERLAY':
+      hideOverlay()
         .then(() => sendResponse({ success: true }))
         .catch((error) => sendResponse({ success: false, error: error.message }));
       return true;
@@ -423,12 +479,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return true;
       
     case 'GET_SETTINGS':
-      chrome.storage.local.get(['obsUrl', 'obsPassword', 'browserSourceName', 'displayDuration']).then((data) => {
+      chrome.storage.local.get(['obsUrl', 'obsPassword', 'displayDuration', 'autoTimeoutEnabled', 'whooshVolume']).then((data) => {
         sendResponse({
           obsUrl: data.obsUrl || OBS_CONFIG.url,
           obsPassword: data.obsPassword || '',
-          browserSourceName: data.browserSourceName || OBS_CONFIG.browserSourceName,
           displayDuration: data.displayDuration || 8,
+          autoTimeoutEnabled: data.autoTimeoutEnabled !== false,
+          whooshVolume: typeof data.whooshVolume === 'number' ? data.whooshVolume : 0.5,
         });
       });
       return true;

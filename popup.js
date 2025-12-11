@@ -3,31 +3,44 @@
  */
 
 const statusDot = document.getElementById('statusDot');
-const statusText = document.getElementById('statusText');
 const obsUrlInput = document.getElementById('obsUrl');
 const obsPasswordInput = document.getElementById('obsPassword');
-const browserSourceNameInput = document.getElementById('browserSourceName');
 const displayDurationInput = document.getElementById('displayDuration');
+const autoTimeoutToggle = document.getElementById('autoTimeoutToggle');
+const whooshVolumeInput = document.getElementById('whooshVolume');
 const saveBtn = document.getElementById('saveBtn');
+const connectBtn = document.getElementById('connectBtn');
 const disconnectBtn = document.getElementById('disconnectBtn');
 
+function updateDurationState() {
+  const enabled = autoTimeoutToggle.checked;
+  const formGroup = displayDurationInput.closest('.form-group');
+
+  displayDurationInput.disabled = !enabled;
+
+  if (formGroup) {
+    formGroup.classList.toggle('disabled', !enabled);
+  }
+}
+
 /**
- * Update status display
+ * Update status display (via header dot tooltip)
  */
 function updateStatus(isConnected, isAuthenticated, error = null) {
   statusDot.classList.remove('connected', 'connecting');
+  statusDot.style.background = '';
   
   if (error) {
-    statusText.textContent = error;
+    statusDot.title = error;
     statusDot.style.background = '#ff4444';
   } else if (isAuthenticated) {
     statusDot.classList.add('connected');
-    statusText.textContent = 'Connected & Authenticated ✓';
+    statusDot.title = 'Connected & Authenticated ✓';
   } else if (isConnected) {
     statusDot.classList.add('connecting');
-    statusText.textContent = 'Connected, authenticating...';
+    statusDot.title = 'Connected, authenticating...';
   } else {
-    statusText.textContent = 'Disconnected';
+    statusDot.title = 'Disconnected';
   }
 }
 
@@ -39,8 +52,10 @@ async function loadSettings() {
   
   obsUrlInput.value = response.obsUrl || 'ws://localhost:4455';
   obsPasswordInput.value = response.obsPassword || '';
-  browserSourceNameInput.value = response.browserSourceName || 'TwitchHighlight';
   displayDurationInput.value = response.displayDuration || 8;
+  autoTimeoutToggle.checked = response.autoTimeoutEnabled !== false;
+  whooshVolumeInput.value = response.whooshVolume ?? 0.5;
+  updateDurationState();
 }
 
 /**
@@ -61,21 +76,22 @@ async function saveSettings() {
       data: {
         obsUrl: obsUrlInput.value.trim() || 'ws://localhost:4455',
         obsPassword: obsPasswordInput.value,
-        browserSourceName: browserSourceNameInput.value.trim() || 'TwitchHighlight',
         displayDuration: duration,
+        autoTimeoutEnabled: autoTimeoutToggle.checked,
+      whooshVolume: parseFloat(whooshVolumeInput.value) ?? 0.5,
       },
     });
     
     saveBtn.textContent = 'Saved!';
     setTimeout(() => {
-      saveBtn.textContent = 'Save & Connect';
+      saveBtn.textContent = 'Save';
       saveBtn.disabled = false;
     }, 1500);
   } catch (error) {
     console.error('Failed to save:', error);
     saveBtn.textContent = 'Error!';
     setTimeout(() => {
-      saveBtn.textContent = 'Save & Connect';
+      saveBtn.textContent = 'Save';
       saveBtn.disabled = false;
     }, 1500);
   }
@@ -110,9 +126,22 @@ chrome.runtime.onMessage.addListener((message) => {
   }
 });
 
+function connectAndSave() {
+  connectBtn.disabled = true;
+  connectBtn.textContent = 'Connecting...';
+  saveSettings().then(() => {
+    chrome.runtime.sendMessage({ type: 'CONNECT_OBS' }).finally(() => {
+      connectBtn.textContent = 'Connect';
+      connectBtn.disabled = false;
+    });
+  });
+}
+
 // Event listeners
 saveBtn.addEventListener('click', saveSettings);
+connectBtn.addEventListener('click', connectAndSave);
 disconnectBtn.addEventListener('click', disconnect);
+autoTimeoutToggle.addEventListener('change', updateDurationState);
 
 // Initialize
 loadSettings();

@@ -4,211 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Twitch OBS Highlighter</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    
-    body {
-      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: linear-gradient(145deg, #0e0e10 0%, #18181b 100%);
-      color: #efeff1;
-      min-width: 320px;
-      padding: 16px;
-    }
-    
-    .header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid #3d3d40;
-    }
-    
-    .header h1 {
-      font-size: 16px;
-      font-weight: 600;
-      color: #bf94ff;
-    }
-    
-    .logo {
-      width: 28px;
-      height: 28px;
-      background: linear-gradient(135deg, #9147ff 0%, #772ce8 100%);
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-    }
-    
-    .status-bar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 12px;
-      background: #1f1f23;
-      border-radius: 8px;
-      margin-bottom: 16px;
-    }
-    
-    .status-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #ff4444;
-      transition: background 0.3s ease;
-    }
-    
-    .status-dot.connected {
-      background: #00c853;
-      box-shadow: 0 0 8px rgba(0, 200, 83, 0.5);
-    }
-    
-    .status-dot.connecting {
-      background: #ffab00;
-      animation: pulse 1s infinite;
-    }
-    
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-    
-    .status-text {
-      font-size: 13px;
-      color: #adadb8;
-    }
-    
-    .form-group {
-      margin-bottom: 14px;
-    }
-    
-    .form-group label {
-      display: block;
-      font-size: 12px;
-      font-weight: 500;
-      color: #adadb8;
-      margin-bottom: 6px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    
-    .form-group input {
-      width: 100%;
-      padding: 10px 12px;
-      background: #1f1f23;
-      border: 1px solid #3d3d40;
-      border-radius: 6px;
-      color: #efeff1;
-      font-size: 14px;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-    
-    .form-group input:focus {
-      outline: none;
-      border-color: #9147ff;
-      box-shadow: 0 0 0 2px rgba(145, 71, 255, 0.2);
-    }
-    
-    .form-group input::placeholder {
-      color: #636369;
-    }
-    
-    .btn-row {
-      display: flex;
-      gap: 8px;
-      margin-top: 16px;
-    }
-    
-    button {
-      flex: 1;
-      padding: 10px 16px;
-      border: none;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    
-    .btn-primary {
-      background: linear-gradient(135deg, #9147ff 0%, #772ce8 100%);
-      color: white;
-    }
-    
-    .btn-primary:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(145, 71, 255, 0.4);
-    }
-    
-    .btn-secondary {
-      background: #3d3d40;
-      color: #efeff1;
-    }
-    
-    .btn-secondary:hover {
-      background: #4d4d51;
-    }
-
-    .help-text {
-      font-size: 11px;
-      color: #636369;
-      margin-top: 4px;
-    }
-    
-    .section-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: #bf94ff;
-      margin: 16px 0 10px;
-      padding-top: 12px;
-      border-top: 1px solid #3d3d40;
-    }
-    
-    .info-box {
-      background: #1f1f23;
-      border-radius: 6px;
-      padding: 10px 12px;
-      font-size: 12px;
-      color: #adadb8;
-      line-height: 1.6;
-    }
-    
-    .info-box code {
-      background: #0e0e10;
-      padding: 2px 6px;
-      border-radius: 4px;
-      color: #bf94ff;
-      font-family: 'Consolas', monospace;
-      font-size: 11px;
-    }
-
-    .step {
-      margin-bottom: 8px;
-    }
-    
-    .step:last-child {
-      margin-bottom: 0;
-    }
-
-    .step b {
-      color: #9147ff;
-    }
-  </style>
+  <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <div class="header">
     <div class="logo">✨</div>
     <h1>Twitch Chat Highlighter</h1>
-  </div>
-  
-  <div class="status-bar">
-    <div class="status-dot" id="statusDot"></div>
-    <span class="status-text" id="statusText">Checking connection...</span>
+    <div class="status-dot" id="statusDot" title="Checking connection..."></div>
   </div>
   
   <div class="form-group">
@@ -222,34 +24,61 @@
     <input type="password" id="obsPassword" placeholder="Leave empty if no password">
   </div>
   
-  <div class="form-group">
-    <label for="browserSourceName">Browser Source Name in OBS</label>
-    <input type="text" id="browserSourceName" placeholder="TwitchHighlight">
-    <p class="help-text">Must match exactly the name in OBS</p>
-  </div>
-  
   <div class="section-title">Display Settings</div>
   
+  <div class="form-group">
+    <div class="toggle-row">
+      <div class="toggle-text">
+        <div class="toggle-title">Enable Chat Auto-Timeout</div>
+        <div class="toggle-subtext">Turn off to keep messages until you close the chatbox</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="autoTimeoutToggle" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+
   <div class="form-group">
     <label for="displayDuration">Message Display Duration (seconds)</label>
     <input type="number" id="displayDuration" min="1" max="60" placeholder="8">
     <p class="help-text">How long the message stays on screen (1-60 seconds)</p>
   </div>
+
+  <div class="form-group">
+    <label for="whooshVolume">Whoosh Volume</label>
+    <input type="range" id="whooshVolume" min="0" max="1" step="0.05" value="0.5">
+    <p class="help-text">Adjust the volume for the whoosh sound effect</p>
+  </div>
   
   <div class="btn-row">
-    <button class="btn-primary" id="saveBtn">Save & Connect</button>
+    <button class="btn-secondary" id="saveBtn">Save</button>
+    <button class="btn-primary" id="connectBtn">Connect</button>
     <button class="btn-secondary" id="disconnectBtn">Disconnect</button>
   </div>
   
-  <div class="section-title">Setup Instructions</div>
-  <div class="info-box">
-    <div class="step"><b>1.</b> Enable WebSocket in OBS: <code>Tools → WebSocket Server Settings</code></div>
-    <div class="step"><b>2.</b> Add URL: <code>https://slam505.github.io/twitch-chat-overlay/overlay.html</code></div>
-    <div class="step"><b>3.</b> Add a Browser Source named <code>TwitchHighlight</code></div>
-    <div class="step"><b>4.</b> Set size (I recommend 700W x 500H)</code></div>
-    <div class="step"><b>5.</b> Click <b>Save & Connect</b> above</div>
-    <div class="step"><b>6.</b> Go to Twitch and click ✨ on any chat message!</div>
-  </div>
+  <details class="dropdown">
+    <summary class="dropdown-header">Setup Instructions</summary>
+    <div class="dropdown-content">
+      <div class="step"><b>1.</b> Enable WebSocket in OBS: <code>Tools → WebSocket Server Settings</code>.</div>
+      <div class="step"><b>2.</b> In the Twitch Extension, set OBS WEBSOCKET URL to <code>ws://localhost:YOURSERVERPORT</code> (default is 4455) and PASSWORD to your <code>OBS WebSocket Server password</code>. Then click <code>Apply → OK</code>.</div>
+      <div class="step"><b>3.</b> Create a new Browser Source in OBS and name it <code>TwitchHighlight</code>. <b>Must match exactly!</b></div>
+      <div class="step"><b>4.</b> Add the URL <code>https://slam505.github.io/twitch-chat-overlay/overlay.html</code> to URL section of the Browser Source.</div>
+      <div class="step"><b>5.</b> Set size (I recommend 700W x 500H). Then click <b>OK</b>.</div>
+      <div class="step"><b>6.</b> In the Twitch Extension, click <b>Connect</b>. The header dot should turn green.</div>
+      <div class="step"><b>7.</b> Go to Twitch and click ✨ on any chat message!</div>
+    </div>
+  </details>
+
+  <details class="dropdown">
+    <summary class="dropdown-header">Info</summary>
+    <div class="dropdown-content">
+      <div class="step"><b>-</b> Works with 7TV, BTTV, FFZ, and Twitch emotes.</div>
+      <div class="step"><b>-</b> The red X button will hide the chat message immediately.</div>
+      <div class="step"><b>-</b> You can have chats from multiple channels at once by using the extension on multiple tabs.</div>
+      <div class="step"><b>-</b> If you change any of the settings, you must click <b>Save</b> to apply the changes.</div>
+    </div>
+  </details>
   
   <script src="popup.js"></script>
 </body>
