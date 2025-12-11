@@ -319,3 +319,22 @@
     font-family: 'Consolas', monospace;
     font-size: 11px;
   }
+
+  /* Volume slider styles */
+  .slider-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .slider-container input[type="range"] {
+    flex: 1;
+  }
+
+  .volume-display {
+    min-width: 40px;
+    text-align: right;
+    font-size: 13px;
+    font-weight: 600;
+    color: #bf94ff;
+  }

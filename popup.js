@@ -8,6 +8,7 @@ const obsPasswordInput = document.getElementById('obsPassword');
 const displayDurationInput = document.getElementById('displayDuration');
 const autoTimeoutToggle = document.getElementById('autoTimeoutToggle');
 const whooshVolumeInput = document.getElementById('whooshVolume');
+const volumeDisplay = document.getElementById('volumeDisplay');
 const saveBtn = document.getElementById('saveBtn');
 const connectBtn = document.getElementById('connectBtn');
 const disconnectBtn = document.getElementById('disconnectBtn');
@@ -21,6 +22,11 @@ function updateDurationState() {
   if (formGroup) {
     formGroup.classList.toggle('disabled', !enabled);
   }
+}
+
+function updateVolumeDisplay() {
+  const percent = Math.round(parseFloat(whooshVolumeInput.value) * 100);
+  volumeDisplay.textContent = `${percent}%`;
 }
 
 /**
@@ -56,6 +62,7 @@ async function loadSettings() {
   autoTimeoutToggle.checked = response.autoTimeoutEnabled !== false;
   whooshVolumeInput.value = response.whooshVolume ?? 0.5;
   updateDurationState();
+  updateVolumeDisplay();
 }
 
 /**
@@ -142,6 +149,7 @@ saveBtn.addEventListener('click', saveSettings);
 connectBtn.addEventListener('click', connectAndSave);
 disconnectBtn.addEventListener('click', disconnect);
 autoTimeoutToggle.addEventListener('change', updateDurationState);
+whooshVolumeInput.addEventListener('input', updateVolumeDisplay);
 
 // Initialize
 loadSettings();
