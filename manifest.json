@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Chat Highlight",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Highlight Twitch chat messages and display them on your stream as a Browser Source.",
   "author": "slam505",
   "homepage_url": "https://github.com/slam505/twitch-chat-overlay",
